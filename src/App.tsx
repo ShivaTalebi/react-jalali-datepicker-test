@@ -1,0 +1,330 @@
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import {
+  JalaliDatepicker,
+  formatJalaliDate,
+  parseJalaliDate,
+  type JalaliDisplayFormat,
+  type JalaliDisabledDateRange,
+} from "flexible-persian-datepicker";
+
+type TargetKind = "input" | "span";
+
+type PickerExampleProps = {
+  title: string;
+  description: string;
+  target: TargetKind;
+  format: JalaliDisplayFormat;
+  showActionButtons: boolean;
+  label?: ReactNode;
+  initialValue?: Date | null;
+  disabledDateRanges?: readonly JalaliDisabledDateRange[];
+};
+
+const formats: JalaliDisplayFormat[] = [
+  "YYYY-MM-DD",
+  "YYYY/MM/DD",
+  "DD/MM/YYYY",
+  "DD MMM YYYY",
+  "MMMM DD, YYYY",
+  "dddd DD MMMM YYYY",
+  "dddd, DD MMMM YYYY",
+];
+
+const defaultDate = new Date(2026, 7, 15);
+const sampleDisabledRanges: JalaliDisabledDateRange[] = [
+  {
+    from: parseJalaliDate("1405/05/26", "YYYY/MM/DD", "fa")!,
+    to: parseJalaliDate("1405/06/03", "YYYY/MM/DD", "fa")!,
+  },
+];
+
+function PickerExample({
+  title,
+  description,
+  target,
+  format,
+  showActionButtons,
+  label,
+  initialValue = null,
+  disabledDateRanges = [],
+}: PickerExampleProps) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState<Date | null>(initialValue);
+  const [pickerValue, setPickerValue] = useState<Date | null | undefined>(
+    initialValue ?? undefined
+  );
+  const [inputText, setInputText] = useState(() =>
+    initialValue ? formatJalaliDate(initialValue, format, "fa") : ""
+  );
+  const inputTextRef = useRef(
+    initialValue ? formatJalaliDate(initialValue, format, "fa") : ""
+  );
+  const committedValueRef = useRef<Date | null>(initialValue);
+  const confirmedCloseRef = useRef(false);
+  const incompleteTypingRef = useRef(false);
+  const [inputError, setInputError] = useState(false);
+  const anchorRef = useRef<HTMLInputElement | HTMLSpanElement | null>(null);
+
+  const displayedValue = value
+    ? formatJalaliDate(value, format, "fa")
+    : "";
+
+  const openPicker = () => {
+    confirmedCloseRef.current = false;
+    setOpen(true);
+  };
+  const acceptDate = (date: Date | null) => {
+    const nextText = date ? formatJalaliDate(date, format, "fa") : "";
+    committedValueRef.current = date;
+    incompleteTypingRef.current = false;
+    inputTextRef.current = nextText;
+    setValue(date);
+    setPickerValue(date);
+    setInputText(nextText);
+    setInputError(false);
+  };
+  const commitTypedDate = () => {
+    if (!inputText.trim()) {
+      setPickerValue(null);
+      setInputError(false);
+      return false;
+    }
+    const parsed = parseJalaliDate(inputText, format, "fa");
+    if (!parsed) {
+      setInputError(true);
+      return false;
+    }
+    acceptDate(parsed);
+    return true;
+  };
+  const handleTypedDateChange = (text: string) => {
+    inputTextRef.current = text;
+    setInputText(text);
+    setInputError(false);
+
+    const parsed = parseJalaliDate(text, format, "fa");
+    incompleteTypingRef.current = text.trim() !== "" && !parsed;
+    setPickerValue(parsed);
+    if (parsed) {
+      // Live controlled sync: year, month and selected day immediately
+      // update inside an already-open calendar without normalizing user input.
+      committedValueRef.current = parsed;
+      setValue(parsed);
+    }
+  };
+  const closePicker = () => {
+    if (confirmedCloseRef.current) {
+      confirmedCloseRef.current = false;
+      setOpen(false);
+      return;
+    }
+    const currentText = inputTextRef.current;
+    const typedDate = currentText.trim()
+      ? parseJalaliDate(currentText, format, "fa")
+      : null;
+    if (!typedDate) {
+      const committed = committedValueRef.current;
+      const restoredText = committed
+        ? formatJalaliDate(committed, format, "fa")
+        : "";
+      inputTextRef.current = restoredText;
+      setPickerValue(committed);
+      setInputText(restoredText);
+      setInputError(false);
+    }
+    setOpen(false);
+  };
+  const confirmDate = (date: Date | null) => {
+    const confirmed = date ?? (!incompleteTypingRef.current ? new Date() : null);
+    confirmedCloseRef.current = true;
+    acceptDate(confirmed);
+  };
+  useEffect(() => {
+    if (open) return;
+    const currentText = inputTextRef.current;
+    const parsed = currentText.trim()
+      ? parseJalaliDate(currentText, format, "fa")
+      : null;
+    if (parsed) return;
+
+    const committed = committedValueRef.current;
+    const restoredText = committed
+      ? formatJalaliDate(committed, format, "fa")
+      : "";
+    inputTextRef.current = restoredText;
+    setPickerValue(committed);
+    setInputText(restoredText);
+    setInputError(false);
+  }, [open, format]);
+  const handleSpanKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openPicker();
+    }
+  };
+
+  return (
+    <article className="example-card">
+      <div className="example-heading">
+        <div>
+          <h2>{title}</h2>
+          <p>{description}</p>
+        </div>
+        <code>{format}</code>
+      </div>
+
+      <div className="target-row">
+        {target === "input" ? (
+          <input
+            ref={anchorRef as RefObject<HTMLInputElement>}
+            className="date-target date-input"
+            value={inputText}
+            placeholder={format}
+            onClick={openPicker}
+            onFocus={openPicker}
+            onChange={(event) => handleTypedDateChange(event.target.value)}
+            onBlur={commitTypedDate}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && commitTypedDate()) {
+                setOpen(false);
+                event.currentTarget.blur();
+              }
+            }}
+            aria-invalid={inputError || undefined}
+            aria-label={title}
+          />
+        ) : (
+          <span
+            ref={anchorRef as RefObject<HTMLSpanElement>}
+            className="date-target date-span"
+            role="button"
+            tabIndex={0}
+            onClick={openPicker}
+            onKeyDown={handleSpanKeyDown}
+            aria-label={title}
+          >
+            {displayedValue || "انتخاب تاریخ"}
+          </span>
+        )}
+
+        <button
+          type="button"
+          className="clear-button"
+          onClick={() => acceptDate(null)}
+          disabled={!value}
+        >
+          پاک‌کردن
+        </button>
+      </div>
+
+      {target === "input" && inputError && (
+        <p className="input-error">تاریخ با فرمت {format} معتبر نیست.</p>
+      )}
+
+      <div className="mode-badge">
+        {showActionButtons
+          ? "حالت تأیید و انصراف"
+          : "حالت انتخاب فوری"}
+      </div>
+
+      <JalaliDatepicker
+        open={open}
+        anchorRef={anchorRef}
+        value={pickerValue}
+        label={label}
+        locale="fa"
+        showActionButtons={showActionButtons}
+        disabledDateRanges={disabledDateRanges}
+        onConfirm={confirmDate}
+        onClose={closePicker}
+      />
+    </article>
+  );
+}
+
+export default function App() {
+  return (
+    <main className="playground" dir="rtl">
+      <header className="page-header">
+        <span className="eyebrow">flexible-persian-datepicker</span>
+        <h1>آزمایش کامل تقویم جلالی</h1>
+        <p>
+          تمام targetها، فرمت‌های خروجی و حالت‌های رفتاری کتابخانه در این صفحه
+          مستقل از یکدیگر قابل آزمایش‌اند.
+        </p>
+      </header>
+
+      <section className="demo-section">
+        <div className="section-heading">
+          <h2>نمونه‌های Input</h2>
+          <p>مقدار پیش‌فرض، تأیید و انصراف، و انتخاب فوری</p>
+        </div>
+
+        <div className="examples-grid input-grid">
+          <PickerExample
+            title="Input با تاریخ پیش‌فرض"
+            description="دارای مقدار اولیه و دکمه‌های تأیید و انصراف"
+            target="input"
+            format="YYYY/MM/DD"
+            showActionButtons={true}
+            label="تاریخ شروع قرارداد"
+            initialValue={defaultDate}
+          />
+
+          <PickerExample
+            title="Input با انتخاب فوری"
+            description="بدون دکمه؛ انتخاب روز بلافاصله ثبت می‌شود"
+            target="input"
+            format="DD/MM/YYYY"
+            showActionButtons={false}
+          />
+
+          <PickerExample
+            title="Input با بازه غیرفعال"
+            description="بازه ۲۶ مرداد تا ۳ شهریور ۱۴۰۵ غیرقابل انتخاب است"
+            target="input"
+            format="YYYY/MM/DD"
+            showActionButtons={true}
+            label="بازه قابل رزرو"
+            initialValue={defaultDate}
+            disabledDateRanges={sampleDisabledRanges}
+          />
+        </div>
+      </section>
+
+      <section className="demo-section">
+        <div className="section-heading">
+          <h2>تمام فرمت‌ها روی Span</h2>
+          <p>برای بازشدن تقویم روی هر Span کلیک کنید.</p>
+        </div>
+
+        <div className="examples-grid span-grid">
+          {formats.map((format, index) => (
+            <PickerExample
+              key={format}
+              title={`Span شماره ${index + 1}`}
+              description={`خروجی با فرمت ${format}`}
+              target="span"
+              format={format}
+              showActionButtons={index % 2 === 0}
+              label={
+                index % 3 === 0
+                  ? `تاریخ نمونه ${index + 1}`
+                  : index % 3 === 1
+                    ? undefined
+                    : "زمان انتخاب‌شده"
+              }
+            />
+          ))}
+        </div>
+      </section>
+    </main>
+  );
+}
