@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "flexible-persian-datepicker": "^1.2.1",
+    "flexible-persian-datepicker": "file:../flexible-persian-datepicker-1.2.2.tgz",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
@@ -29,6 +29,9 @@
     "vite": "npm:rolldown-vite@7.1.14"
   },
   "overrides": {
-    "vite": "npm:rolldown-vite@7.1.14"
+    "vite": "npm:rolldown-vite@7.1.14",
+    "micromatch": {
+      "picomatch": "2.3.2"
+    }
   }
 }

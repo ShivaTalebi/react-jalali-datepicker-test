@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -8,8 +9,11 @@ import {
 } from "react";
 import {
   JalaliDatepicker,
-  formatJalaliDate,
+  formatCalendarDate,
+  parseCalendarDate,
   parseJalaliDate,
+  type CalendarSystem,
+  type IslamicDateAdjustment,
   type JalaliDisplayFormat,
   type JalaliDisabledDateRange,
 } from "flexible-persian-datepicker";
@@ -25,6 +29,8 @@ type PickerExampleProps = {
   label?: ReactNode;
   initialValue?: Date | null;
   disabledDateRanges?: readonly JalaliDisabledDateRange[];
+  calendar?: CalendarSystem;
+  islamicDateAdjustment?: IslamicDateAdjustment;
 };
 
 const formats: JalaliDisplayFormat[] = [
@@ -54,17 +60,37 @@ function PickerExample({
   label,
   initialValue = null,
   disabledDateRanges = [],
+  calendar = "jalali",
+  islamicDateAdjustment,
 }: PickerExampleProps) {
+  const formatDate = useCallback(
+    (date: Date | null) =>
+      formatCalendarDate(date, format, {
+        calendar,
+        locale: "fa",
+        islamicDateAdjustment,
+      }),
+    [calendar, format, islamicDateAdjustment]
+  );
+  const parseDate = useCallback(
+    (text: string) =>
+      parseCalendarDate(text, format, {
+        calendar,
+        locale: "fa",
+        islamicDateAdjustment,
+      }),
+    [calendar, format, islamicDateAdjustment]
+  );
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState<Date | null>(initialValue);
   const [pickerValue, setPickerValue] = useState<Date | null | undefined>(
     initialValue ?? undefined
   );
   const [inputText, setInputText] = useState(() =>
-    initialValue ? formatJalaliDate(initialValue, format, "fa") : ""
+    initialValue ? formatDate(initialValue) : ""
   );
   const inputTextRef = useRef(
-    initialValue ? formatJalaliDate(initialValue, format, "fa") : ""
+    initialValue ? formatDate(initialValue) : ""
   );
   const committedValueRef = useRef<Date | null>(initialValue);
   const confirmedCloseRef = useRef(false);
@@ -73,7 +99,7 @@ function PickerExample({
   const anchorRef = useRef<HTMLInputElement | HTMLSpanElement | null>(null);
 
   const displayedValue = value
-    ? formatJalaliDate(value, format, "fa")
+    ? formatDate(value)
     : "";
 
   const openPicker = () => {
@@ -81,7 +107,7 @@ function PickerExample({
     setOpen(true);
   };
   const acceptDate = (date: Date | null) => {
-    const nextText = date ? formatJalaliDate(date, format, "fa") : "";
+    const nextText = date ? formatDate(date) : "";
     committedValueRef.current = date;
     incompleteTypingRef.current = false;
     inputTextRef.current = nextText;
@@ -96,7 +122,7 @@ function PickerExample({
       setInputError(false);
       return false;
     }
-    const parsed = parseJalaliDate(inputText, format, "fa");
+    const parsed = parseDate(inputText);
     if (!parsed) {
       setInputError(true);
       return false;
@@ -109,7 +135,7 @@ function PickerExample({
     setInputText(text);
     setInputError(false);
 
-    const parsed = parseJalaliDate(text, format, "fa");
+    const parsed = parseDate(text);
     incompleteTypingRef.current = text.trim() !== "" && !parsed;
     setPickerValue(parsed);
     if (parsed) {
@@ -127,12 +153,12 @@ function PickerExample({
     }
     const currentText = inputTextRef.current;
     const typedDate = currentText.trim()
-      ? parseJalaliDate(currentText, format, "fa")
+      ? parseDate(currentText)
       : null;
     if (!typedDate) {
       const committed = committedValueRef.current;
       const restoredText = committed
-        ? formatJalaliDate(committed, format, "fa")
+        ? formatDate(committed)
         : "";
       inputTextRef.current = restoredText;
       setPickerValue(committed);
@@ -150,19 +176,19 @@ function PickerExample({
     if (open) return;
     const currentText = inputTextRef.current;
     const parsed = currentText.trim()
-      ? parseJalaliDate(currentText, format, "fa")
+      ? parseDate(currentText)
       : null;
     if (parsed) return;
 
     const committed = committedValueRef.current;
     const restoredText = committed
-      ? formatJalaliDate(committed, format, "fa")
+      ? formatDate(committed)
       : "";
     inputTextRef.current = restoredText;
     setPickerValue(committed);
     setInputText(restoredText);
     setInputError(false);
-  }, [open, format]);
+  }, [open, formatDate, parseDate]);
   const handleSpanKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -240,6 +266,8 @@ function PickerExample({
         value={pickerValue}
         label={label}
         locale="fa"
+        calendar={calendar}
+        islamicDateAdjustment={islamicDateAdjustment}
         showActionButtons={showActionButtons}
         disabledDateRanges={disabledDateRanges}
         onConfirm={confirmDate}
@@ -254,10 +282,10 @@ export default function App() {
     <main className="playground" dir="rtl">
       <header className="page-header">
         <span className="eyebrow">flexible-persian-datepicker</span>
-        <h1>آزمایش کامل تقویم جلالی</h1>
+        <h1>آزمایش کامل تقویم چندگانه</h1>
         <p>
-          تمام targetها، فرمت‌های خروجی و حالت‌های رفتاری کتابخانه در این صفحه
-          مستقل از یکدیگر قابل آزمایش‌اند.
+          تقویم‌های شمسی، قمری و میلادی، تمام targetها، فرمت‌های خروجی و
+          حالت‌های رفتاری کتابخانه در این صفحه مستقل از یکدیگر قابل آزمایش‌اند.
         </p>
       </header>
 
@@ -295,6 +323,61 @@ export default function App() {
             label="بازه قابل رزرو"
             initialValue={defaultDate}
             disabledDateRanges={sampleDisabledRanges}
+          />
+        </div>
+      </section>
+
+      <section className="demo-section">
+        <div className="section-heading">
+          <h2>تقویم‌های شمسی، قمری و میلادی</h2>
+          <p>هر سه حالت از یک مقدار استاندارد JavaScript Date استفاده می‌کنند.</p>
+        </div>
+
+        <div className="examples-grid input-grid">
+          <PickerExample
+            title="تقویم هجری شمسی"
+            description="نمایش جلالی با سازگاری کامل نسخه‌های قبلی"
+            target="input"
+            format="YYYY/MM/DD"
+            calendar="jalali"
+            showActionButtons
+            initialValue={defaultDate}
+          />
+          <PickerExample
+            title="تقویم هجری قمری عددی"
+            description="نمایش عددی قمری با اصلاح پیش‌فرض اختلاف یک‌روزه"
+            target="input"
+            format="YYYY/MM/DD"
+            calendar="islamic"
+            showActionButtons={false}
+            initialValue={defaultDate}
+          />
+          <PickerExample
+            title="تقویم هجری قمری نوشتاری"
+            description="نمایش تاریخ همراه با نام ماه قمری"
+            target="input"
+            format="DD MMM YYYY"
+            calendar="islamic"
+            showActionButtons
+            initialValue={defaultDate}
+          />
+          <PickerExample
+            title="تقویم میلادی عددی"
+            description="نمایش عددی با ارقام لاتین و رابط انگلیسی"
+            target="input"
+            format="YYYY-MM-DD"
+            calendar="gregorian"
+            showActionButtons={false}
+            initialValue={defaultDate}
+          />
+          <PickerExample
+            title="تقویم میلادی نوشتاری"
+            description="نام ماه و روز، Dropdownها و دکمه‌ها کاملاً انگلیسی هستند"
+            target="input"
+            format="dddd, DD MMMM YYYY"
+            calendar="gregorian"
+            showActionButtons
+            initialValue={defaultDate}
           />
         </div>
       </section>
