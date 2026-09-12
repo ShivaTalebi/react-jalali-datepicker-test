@@ -41,7 +41,7 @@ button:disabled {
 
 .page-header {
   max-width: 760px;
-  margin-bottom: 42px;
+  margin-bottom: 28px;
 }
 
 .eyebrow {
@@ -71,6 +71,49 @@ button:disabled {
   margin-top: 48px;
 }
 
+.calendar-tabs {
+  display: flex;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 28px;
+  padding: 6px;
+  overflow-x: auto;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid #dbe3ef;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  scrollbar-width: none;
+}
+
+.calendar-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.calendar-tab {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 8px 16px;
+  color: #475569;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.calendar-tab:hover {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.calendar-tab.is-active {
+  color: #fff;
+  background: #2563eb;
+  box-shadow: 0 5px 14px rgba(37, 99, 235, 0.25);
+}
+
 .section-heading {
   margin-bottom: 18px;
 }
@@ -95,6 +138,7 @@ button:disabled {
 
 .example-card {
   min-width: 0;
+  align-self: start;
   padding: 20px;
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid #e2e8f0;
@@ -169,6 +213,54 @@ button:disabled {
   cursor: pointer;
 }
 
+.calendar-input-group {
+  display: flex;
+  width: 100%;
+  direction: rtl;
+}
+
+.calendar-group-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  padding: 11px 13px;
+  color: #0f172a;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-left: 0;
+  border-radius: 0 10px 10px 0;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.calendar-icon-button {
+  display: inline-flex;
+  flex: 0 0 46px;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px 0 0 10px;
+}
+
+.calendar-input-group:focus-within .calendar-group-input,
+.calendar-input-group:focus-within .calendar-icon-button {
+  border-color: #2563eb;
+}
+
+.calendar-input-group:focus-within {
+  border-radius: 10px;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.calendar-icon-button:hover {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
 .date-span {
   display: flex;
   align-items: center;
@@ -205,6 +297,10 @@ button:disabled {
   font-size: 11px;
 }
 
+.other-examples {
+  margin-bottom: 18px;
+}
+
 @media (max-width: 900px) {
   .span-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -224,6 +320,10 @@ button:disabled {
 
   .page-header {
     margin-bottom: 30px;
+  }
+
+  .calendar-tabs {
+    width: 100%;
   }
 }
 

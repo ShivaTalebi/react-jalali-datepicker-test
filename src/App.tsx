@@ -4,19 +4,19 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
-  type ReactNode,
   type RefObject,
 } from "react";
 import {
   JalaliDatepicker,
   formatCalendarDate,
+  formatJalaliDate,
   parseCalendarDate,
   parseJalaliDate,
+  type CalendarDisplayFormat,
   type CalendarSystem,
-  type IslamicDateAdjustment,
   type JalaliDisplayFormat,
   type JalaliDisabledDateRange,
-} from "flexible-persian-datepicker";
+} from "flexible-multi-calendar-datepicker";
 
 type TargetKind = "input" | "span";
 
@@ -26,11 +26,9 @@ type PickerExampleProps = {
   target: TargetKind;
   format: JalaliDisplayFormat;
   showActionButtons: boolean;
-  label?: ReactNode;
+  label?: string;
   initialValue?: Date | null;
   disabledDateRanges?: readonly JalaliDisabledDateRange[];
-  calendar?: CalendarSystem;
-  islamicDateAdjustment?: IslamicDateAdjustment;
 };
 
 const formats: JalaliDisplayFormat[] = [
@@ -51,6 +49,104 @@ const sampleDisabledRanges: JalaliDisabledDateRange[] = [
   },
 ];
 
+type CalendarSystemExampleProps = {
+  calendar: CalendarSystem;
+  title: string;
+  description: string;
+  format: CalendarDisplayFormat;
+  label?: string;
+  showActionButtons?: boolean;
+  withDefaultValue?: boolean;
+  target?: TargetKind;
+};
+
+function CalendarSystemExample({
+  calendar,
+  title,
+  description,
+  format,
+  label,
+  showActionButtons = true,
+  withDefaultValue = true,
+  target = "input",
+}: CalendarSystemExampleProps) {
+  const initialDate = withDefaultValue ? defaultDate : null;
+  const anchorRef = useRef<HTMLInputElement | HTMLSpanElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState<Date | null>(initialDate);
+  const [text, setText] = useState(() =>
+    formatCalendarDate(initialDate, format, { calendar })
+  );
+
+  const commit = (next: Date | null) => {
+    setDate(next);
+    setText(formatCalendarDate(next, format, { calendar }));
+  };
+
+  return (
+    <article className="example-card" dir={calendar === "gregorian" ? "ltr" : "rtl"}>
+      <div className="example-heading">
+        <div>
+          <h2>{title}</h2>
+          <p>{description}</p>
+        </div>
+        <code>{format}</code>
+      </div>
+
+      {target === "input" ? (
+        <input
+          ref={anchorRef as RefObject<HTMLInputElement>}
+          className="date-target date-input"
+          value={text}
+          placeholder={format}
+          aria-label={title}
+          onFocus={() => setOpen(true)}
+          onClick={() => setOpen(true)}
+          onChange={(event) => {
+            const nextText = event.target.value;
+            setText(nextText);
+            setDate(parseCalendarDate(nextText, format, { calendar }));
+          }}
+        />
+      ) : (
+        <span
+          ref={anchorRef as RefObject<HTMLSpanElement>}
+          className="date-target date-span"
+          role="button"
+          tabIndex={0}
+          aria-label={title}
+          onClick={() => setOpen(true)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setOpen(true);
+            }
+          }}
+        >
+          {text || (calendar === "gregorian" ? "Choose date" : "انتخاب تاریخ")}
+        </span>
+      )}
+
+      <div className="mode-badge">
+        {calendar === "gregorian"
+          ? `${showActionButtons ? "Confirm/Cancel footer" : "Immediate selection"}${label ? " · With header" : " · No header"}`
+          : `${showActionButtons ? "با دکمه‌های تأیید و انصراف" : "انتخاب فوری بدون Footer"}${label ? " · دارای Header" : " · بدون Header"}`}
+      </div>
+
+      <JalaliDatepicker
+        calendar={calendar}
+        open={open}
+        anchorRef={anchorRef}
+        value={date}
+        label={label}
+        showActionButtons={showActionButtons}
+        onConfirm={commit}
+        onClose={() => setOpen(false)}
+      />
+    </article>
+  );
+}
+
 function PickerExample({
   title,
   description,
@@ -60,26 +156,14 @@ function PickerExample({
   label,
   initialValue = null,
   disabledDateRanges = [],
-  calendar = "jalali",
-  islamicDateAdjustment,
 }: PickerExampleProps) {
   const formatDate = useCallback(
-    (date: Date | null) =>
-      formatCalendarDate(date, format, {
-        calendar,
-        locale: "fa",
-        islamicDateAdjustment,
-      }),
-    [calendar, format, islamicDateAdjustment]
+    (date: Date | null) => formatJalaliDate(date, format, "fa"),
+    [format]
   );
   const parseDate = useCallback(
-    (text: string) =>
-      parseCalendarDate(text, format, {
-        calendar,
-        locale: "fa",
-        islamicDateAdjustment,
-      }),
-    [calendar, format, islamicDateAdjustment]
+    (text: string) => parseJalaliDate(text, format, "fa"),
+    [format]
   );
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState<Date | null>(initialValue);
@@ -266,8 +350,6 @@ function PickerExample({
         value={pickerValue}
         label={label}
         locale="fa"
-        calendar={calendar}
-        islamicDateAdjustment={islamicDateAdjustment}
         showActionButtons={showActionButtons}
         disabledDateRanges={disabledDateRanges}
         onConfirm={confirmDate}
@@ -277,22 +359,124 @@ function PickerExample({
   );
 }
 
+function InputGroupExample() {
+  const format: JalaliDisplayFormat = "YYYY/MM/DD";
+  const groupRef = useRef<HTMLDivElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState<Date | null>(defaultDate);
+  const [text, setText] = useState(() =>
+    formatJalaliDate(defaultDate, format, "fa")
+  );
+
+  const commit = (next: Date | null) => {
+    setDate(next);
+    setText(formatJalaliDate(next, format, "fa"));
+  };
+
+  return (
+    <article className="example-card">
+      <div className="example-heading">
+        <div>
+          <h2>Input Group با آیکن تقویم</h2>
+          <p>بازشدن تقویم با دکمه آیکن و نمایش تاریخ در input</p>
+        </div>
+        <code>{format}</code>
+      </div>
+
+      <div ref={groupRef} className="calendar-input-group">
+        <input
+          className="calendar-group-input"
+          value={text}
+          placeholder={format}
+          aria-label="تاریخ Input Group"
+          onChange={(event) => {
+            const nextText = event.target.value;
+            setText(nextText);
+            setDate(parseJalaliDate(nextText, format, "fa"));
+          }}
+        />
+        <button
+          type="button"
+          className="calendar-icon-button"
+          aria-label="باز کردن تقویم Input Group"
+          aria-expanded={open}
+          onClick={() => setOpen((current) => !current)}
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="5" width="18" height="16" rx="2" />
+            <path d="M16 3v4M8 3v4M3 10h18" />
+            <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="mode-badge">بازشدن فقط با آیکن</div>
+
+      <JalaliDatepicker
+        open={open}
+        anchorRef={groupRef}
+        value={date}
+        label="تاریخ Input Group"
+        locale="fa"
+        showActionButtons
+        onConfirm={commit}
+        onClose={() => setOpen(false)}
+      />
+    </article>
+  );
+}
+
 export default function App() {
+  const [activeTab, setActiveTab] = useState<
+    "jalali" | "islamic" | "gregorian" | "other"
+  >("jalali");
+  const tabs = [
+    { id: "jalali" as const, label: "تقویم شمسی" },
+    { id: "islamic" as const, label: "تقویم قمری" },
+    { id: "gregorian" as const, label: "تقویم میلادی" },
+    { id: "other" as const, label: "سایر مثال‌ها" },
+  ];
+
   return (
     <main className="playground" dir="rtl">
       <header className="page-header">
-        <span className="eyebrow">flexible-persian-datepicker</span>
-        <h1>آزمایش کامل تقویم چندگانه</h1>
+        <span className="eyebrow">flexible-multi-calendar-datepicker</span>
+        <h1>مشاهده تمام تقویم‌ها</h1>
         <p>
-          تقویم‌های شمسی، قمری و میلادی، تمام targetها، فرمت‌های خروجی و
-          حالت‌های رفتاری کتابخانه در این صفحه مستقل از یکدیگر قابل آزمایش‌اند.
+          برای بررسی تمام فرمت‌ها، Header و Footer اختیاری و روش‌های مختلف
+          استفاده، تقویم موردنظر را انتخاب کنید.
         </p>
       </header>
 
-      <section className="demo-section">
+      <nav className="calendar-tabs" aria-label="انتخاب نوع تقویم" role="tablist">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            className={activeTab === tab.id ? "calendar-tab is-active" : "calendar-tab"}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      {activeTab === "jalali" && <section className="demo-section" role="tabpanel">
         <div className="section-heading">
-          <h2>نمونه‌های Input</h2>
-          <p>مقدار پیش‌فرض، تأیید و انصراف، و انتخاب فوری</p>
+          <h2>تمام حالت‌های تقویم شمسی</h2>
+          <p>فرمت عددی و نوشتاری، Header و Footer اختیاری و بازه غیرفعال</p>
         </div>
 
         <div className="examples-grid input-grid">
@@ -324,68 +508,57 @@ export default function App() {
             initialValue={defaultDate}
             disabledDateRanges={sampleDisabledRanges}
           />
-        </div>
-      </section>
 
-      <section className="demo-section">
+          <PickerExample
+            title="نمایش نوشتاری تاریخ"
+            description="نام روز و ماه به همراه Header دلخواه"
+            target="input"
+            format="dddd, DD MMMM YYYY"
+            showActionButtons={true}
+            label="تاریخ تحویل"
+            initialValue={defaultDate}
+          />
+        </div>
+      </section>}
+
+      {activeTab === "islamic" && <section className="demo-section" role="tabpanel">
         <div className="section-heading">
-          <h2>تقویم‌های شمسی، قمری و میلادی</h2>
-          <p>هر سه حالت از یک مقدار استاندارد JavaScript Date استفاده می‌کنند.</p>
+          <h2>تمام حالت‌های تقویم هجری قمری</h2>
+          <p>فرمت‌های عددی و نوشتاری با Header و Footer اختیاری</p>
         </div>
 
         <div className="examples-grid input-grid">
-          <PickerExample
-            title="تقویم هجری شمسی"
-            description="نمایش جلالی با سازگاری کامل نسخه‌های قبلی"
-            target="input"
-            format="YYYY/MM/DD"
-            calendar="jalali"
-            showActionButtons
-            initialValue={defaultDate}
-          />
-          <PickerExample
-            title="تقویم هجری قمری عددی"
-            description="نمایش عددی قمری با اصلاح پیش‌فرض اختلاف یک‌روزه"
-            target="input"
-            format="YYYY/MM/DD"
-            calendar="islamic"
-            showActionButtons={false}
-            initialValue={defaultDate}
-          />
-          <PickerExample
-            title="تقویم هجری قمری نوشتاری"
-            description="نمایش تاریخ همراه با نام ماه قمری"
-            target="input"
-            format="DD MMM YYYY"
-            calendar="islamic"
-            showActionButtons
-            initialValue={defaultDate}
-          />
-          <PickerExample
-            title="تقویم میلادی عددی"
-            description="نمایش عددی با ارقام لاتین و رابط انگلیسی"
-            target="input"
-            format="YYYY-MM-DD"
-            calendar="gregorian"
-            showActionButtons={false}
-            initialValue={defaultDate}
-          />
-          <PickerExample
-            title="تقویم میلادی نوشتاری"
-            description="نام ماه و روز، Dropdownها و دکمه‌ها کاملاً انگلیسی هستند"
-            target="input"
-            format="dddd, DD MMMM YYYY"
-            calendar="gregorian"
-            showActionButtons
-            initialValue={defaultDate}
-          />
+          <CalendarSystemExample calendar="islamic" title="تاریخ قمری با مقدار پیش‌فرض" description="فرمت عددی و دکمه‌های تأیید و انصراف" format="YYYY/MM/DD" label="التاريخ الهجري" />
+          <CalendarSystemExample calendar="islamic" title="انتخاب فوری قمری" description="بدون Header و Footer؛ بسته‌شدن پس از انتخاب" format="DD/MM/YYYY" label="" showActionButtons={false} withDefaultValue={false} />
+          <CalendarSystemExample calendar="islamic" title="نام کوتاه ماه قمری" description="ترکیب روز، نام ماه و سال قمری" format="DD MMM YYYY" label="تاريخ العقد" />
+          <CalendarSystemExample calendar="islamic" title="تاریخ کامل قمری" description="نام روز و نام کامل ماه قمری" format="dddd, DD MMMM YYYY" label="موعد التسليم" />
         </div>
-      </section>
+      </section>}
 
-      <section className="demo-section">
+      {activeTab === "gregorian" && <section className="demo-section" role="tabpanel">
         <div className="section-heading">
-          <h2>تمام فرمت‌ها روی Span</h2>
-          <p>برای بازشدن تقویم روی هر Span کلیک کنید.</p>
+          <h2>تمام حالت‌های تقویم میلادی</h2>
+          <p>رابط انگلیسی، اعداد لاتین و Header و Footer اختیاری</p>
+        </div>
+
+        <div className="examples-grid input-grid">
+          <CalendarSystemExample calendar="gregorian" title="Gregorian numeric date" description="Default value with Confirm and Cancel buttons" format="YYYY-MM-DD" label="Start date" />
+          <CalendarSystemExample calendar="gregorian" title="Immediate Gregorian selection" description="No Header or Footer; closes after selecting a day" format="DD/MM/YYYY" label="" showActionButtons={false} withDefaultValue={false} />
+          <CalendarSystemExample calendar="gregorian" title="Short month name" description="Latin day, month name and year" format="DD MMM YYYY" label="Delivery date" />
+          <CalendarSystemExample calendar="gregorian" title="Full Gregorian date" description="Weekday and full month name" format="dddd, DD MMMM YYYY" label="Appointment date" />
+        </div>
+      </section>}
+
+      {activeTab === "other" && <section className="demo-section" role="tabpanel">
+        <div className="section-heading">
+          <h2>سایر مثال‌ها</h2>
+          <p>نمونه‌های Span، فرمت‌های مختلف و Input Group دارای آیکن تقویم</p>
+        </div>
+
+        <div className="examples-grid input-grid other-examples">
+          <InputGroupExample />
+          <CalendarSystemExample calendar="islamic" target="span" title="Span با تقویم قمری" description="بازشدن تقویم قمری از یک عنصر غیر Input" format="DD MMM YYYY" label="تاریخ قمری" />
+          <CalendarSystemExample calendar="gregorian" target="span" title="Gregorian calendar on Span" description="Open the Gregorian picker from a custom element" format="MMMM DD, YYYY" label="Selected date" showActionButtons={false} />
         </div>
 
         <div className="examples-grid span-grid">
@@ -407,7 +580,7 @@ export default function App() {
             />
           ))}
         </div>
-      </section>
+      </section>}
     </main>
   );
 }

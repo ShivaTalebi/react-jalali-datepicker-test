@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "flexible-persian-datepicker": "file:../flexible-persian-datepicker-1.2.2.tgz",
+    "flexible-multi-calendar-datepicker": "file:../react-jalali-calender",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
