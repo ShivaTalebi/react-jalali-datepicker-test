@@ -41,7 +41,39 @@ button:disabled {
 
 .page-header {
   max-width: 760px;
-  margin-bottom: 42px;
+  margin-bottom: 26px;
+}
+
+.calendar-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+  padding: 6px;
+  overflow-x: auto;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid #dbe4f0;
+  border-radius: 14px;
+}
+
+.calendar-tab {
+  flex: 1 0 max-content;
+  padding: 10px 16px;
+  color: #475569;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.calendar-tab:hover {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.calendar-tab.is-active {
+  color: #fff;
+  background: #2563eb;
+  box-shadow: 0 5px 14px rgba(37, 99, 235, 0.22);
 }
 
 .eyebrow {
@@ -203,6 +235,41 @@ button:disabled {
   background: #f1f5f9;
   border-radius: 999px;
   font-size: 11px;
+}
+
+.calendar-input-group {
+  display: flex;
+  direction: ltr;
+  min-height: 46px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.calendar-input-group:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.calendar-group-input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 13px;
+  direction: ltr;
+  color: #0f172a;
+  background: #fff;
+  border: 0;
+  outline: 0;
+}
+
+.calendar-icon-button {
+  width: 48px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 0;
+  border-left: 1px solid #cbd5e1;
+  font-size: 22px;
 }
 
 @media (max-width: 900px) {

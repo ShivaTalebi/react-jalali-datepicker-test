@@ -1,9 +1,9 @@
-name: Deploy Multi Calendar Demo
+name: Deploy Persian Datepicker Demo
 
 on:
   push:
     branches:
-      - feature/multi-calendar-demo
+      - main
   workflow_dispatch:
 
 permissions:
